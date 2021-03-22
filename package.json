@@ -7,8 +7,8 @@
     "node": "8.11.0"
   },
   "scripts": {
-    "start": "node --optimize_for_size --max-old-space-size=460 index.js react-scripts start",
-    "build": "node --optimize_for_size --max-old-space-size=460 index.js react-scripts build",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "deploy": "npm run build && git add . && git ci -m 'build' && git push heroku"
