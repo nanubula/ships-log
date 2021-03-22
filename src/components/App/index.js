@@ -36,7 +36,7 @@ export default class App extends React.Component {
         </a>
         <Header>
           <h1>
-            The Ship's Log
+            Test OpenSea Store
           </h1>
           <h6>
             <a target="_blank" rel="noopener noreferrer" href={OPENSEA_JS_URL}>
