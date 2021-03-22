@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "An example app listing recent auctions and bids on OpenSea, with the ability to buy items or accept offers right from the page",
   "main": "index.js",
+  "engines": {
+    "node": "8.11.0"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
