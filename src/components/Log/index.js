@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Order from '../Order';
 import { OrderSide } from 'opensea-js/lib/types';
-import { connectWallet } from '../../constants';
+import { connectWallet, SEACREATURES_FACTORY_ADDRESS, SEACREATURES_INDIVIDUAL_ADDRESS } from '../../constants';
 
 export default class Log extends React.Component {
   static propTypes = {
@@ -13,10 +13,8 @@ export default class Log extends React.Component {
   state = {
     orders: undefined,
     total: 0,
-    side: undefined,
-    onlyForMe: false,
-    onlyByMe: false,
-    onlyBundles: false,
+    factoryCollection: true,
+    showWallet: false,
     page: 1
   };
 
@@ -25,76 +23,42 @@ export default class Log extends React.Component {
   }
 
   async fetchData() {
-    const { accountAddress } = this.props
-    const { orders, count } = await this.props.seaport.api.getOrders({
-      maker: this.state.onlyByMe ? accountAddress : undefined,
-      owner: this.state.onlyForMe ? accountAddress : undefined,
-      side: this.state.side,
-      bundled: this.state.onlyBundles ? true : undefined
-      // Possible query options:
-      // 'asset_contract_address'
-      // 'taker'
-      // 'token_id'
-      // 'token_ids'
-      // 'sale_kind'
-      
-    }, this.state.page)
+    const { factoryCollection } = this.state
 
+    const { orders, count } = await this.props.seaport.api.getOrders({
+      asset_contract_address: factoryCollection ? SEACREATURES_FACTORY_ADDRESS : SEACREATURES_INDIVIDUAL_ADDRESS,
+    }, this.state.page)
+    //console.log(orders);
     this.setState({ orders, total: count })
+
+    /// Get assets from a collection
+    // const { assets } = await this.props.seaport.api.getAssets({
+    //   collection: "opensea-creatures-bv62zugfvt"
+
+    // })
+    // console.log(assets);
   }
 
   paginateTo(page) {
     this.setState({ orders: undefined, page }, () => this.fetchData())
   }
 
-  toggleSide(side) {
-    if (this.state.side === side) {
-      side = undefined
-    }
+  async toggleCollection(factoryCollection) {
     this.setState({
-      orders: undefined,
-      side,
-      onlyForMe: undefined
+      factoryCollection: factoryCollection, showWallet: false
     }, () => this.fetchData())
   }
 
-  async toggleForMe() {
+  async toggleWallet() {
     const { accountAddress } = this.props
-    if (!accountAddress) {
-      await connectWallet()
-    }
-    const { onlyForMe } = this.state
-    this.setState( {
-      orders: undefined,
-      onlyForMe: !onlyForMe,
-      onlyByMe: false,
-      // Doesn't make sense to show sell orders the user makes
-      side: onlyForMe ? undefined : OrderSide.Buy,
-    }, () => this.fetchData())
-  }
-
-  toggleBundles() {
-    const { onlyBundles } = this.state
-    this.setState( {
-      orders: undefined,
-      onlyBundles: !onlyBundles,
-      onlyByMe: false,
-      // Only sell-side for now
-      side: OrderSide.Sell,
-    }, () => this.fetchData())
-  }
-
-  async toggleByMe() {
-    const { accountAddress } = this.props
-    if (!accountAddress) {
-      await connectWallet()
-    }
-    const { onlyByMe } = this.state
-    this.setState( {
-      orders: undefined,
-      onlyByMe: !onlyByMe,
-      onlyForMe: false
-    }, () => this.fetchData())
+    const { assets } = await this.props.seaport.api.getAssets({
+      //asset_contract_address: "0xeb391f33b7da0abb89a68adcb92ae10ee7b24e78",
+      owner: accountAddress,
+    }, this.state.page)
+    console.log(assets);
+    this.setState({
+      showWallet: true
+    })
   }
 
   renderPagination() {
@@ -122,36 +86,23 @@ export default class Log extends React.Component {
   }
 
   renderFilters() {
-    const { onlyByMe, onlyForMe, onlyBundles } = this.state
-    const sellSide = this.state.side === OrderSide.Sell
-    const buySide = this.state.side === OrderSide.Buy
+    const { factoryCollection, showWallet } = this.props
 
     return (
       <div className="row">
         <div className="mb-3 ml-4">
-          Filter orderbook:
           <div className="btn-group ml-4" role="group">
-            <button type="button" className={"btn btn-outline-primary " + (sellSide ? "active" : "")} data-toggle="button" onClick={() => this.toggleSide(OrderSide.Sell)}>
-              Auctions
+            <button type="button" className={"btn btn-outline-primary " + (factoryCollection ? "active" : "")} data-toggle="button" onClick={() => this.toggleCollection(true)}>
+              Store 1
             </button>
-            <button type="button" className={"btn btn-outline-success " + (buySide ? "active" : "")} data-toggle="button" onClick={() => this.toggleSide(OrderSide.Buy)}>
-              Bids
-            </button>
-          </div>
-        </div>
-        <div className="mb-3 ml-4">
-          <div className="btn-group" role="group">
-            <button type="button" className={"btn btn-outline-secondary " + (onlyForMe ? "active" : "")} data-toggle="button" onClick={() => this.toggleForMe()}>
-              For Me
-            </button>
-            <button type="button" className={"btn btn-outline-secondary " + (onlyByMe ? "active" : "")} data-toggle="button" onClick={() => this.toggleByMe()}>
-              By Me
+            <button type="button" className={"btn btn-outline-success " + (factoryCollection ? "active" : "")} data-toggle="button" onClick={() => this.toggleCollection(false)}>
+              Store 2
             </button>
           </div>
         </div>
         <div className="mb-3 ml-4">
-          <button type="button" className={"btn btn-outline-info " + (onlyBundles ? "active" : "")} data-toggle="button" onClick={() => this.toggleBundles()}>
-            Bundles
+          <button type="button" className={"btn btn-outline-info " + (showWallet ? "active" : "")} data-toggle="button" onClick={() => this.toggleWallet()}>
+            Wallet
           </button>
         </div>
       </div>

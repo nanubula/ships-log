@@ -5,7 +5,7 @@ import Account from '../Account'
 import AssetMetadata from './AssetMetadata'
 import BundleMetadata from './BundleMetadata'
 import styled from 'styled-components';
-import { connectWallet } from '../../constants';
+import { connectWallet, signMsg } from '../../constants';
 import { OrderSide } from 'opensea-js/lib/types';
 import SalePrice from '../common/SalePrice';
 
@@ -84,6 +84,122 @@ export default class Order extends React.Component {
     )
   }
 
+  async verifyOwner() {
+    const { order } = this.props
+    let { accountAddress } = this.props
+    const { asset } = order
+    if (!accountAddress) {
+      accountAddress = await connectWallet()
+    }
+    try {
+      const balance = await this.props.seaport.getAssetBalance({
+        accountAddress, // string
+        asset, // Asset
+      })
+      
+      const ownsAsset = balance.greaterThan(0);
+      this.setState({
+        errorMessage: ownsAsset.toString()
+      })
+    } catch(error) {
+      this.onError(error)
+    } finally {
+      this.setState({ creatingOrder: false })
+    }
+  }
+
+  renderVerifyOwnershipButton() {
+    const verifyOwner = async () => {
+      this.verifyOwner()
+    }
+    return (
+      <button
+        onClick={verifyOwner}
+        className="btn btn-primary w-100">
+        
+        Do I own this?
+
+      </button>
+    )
+  }
+
+  async signatureVerifyOwner() {
+    const { order } = this.props
+    const { asset } = order
+    const accountAddress = await connectWallet()
+
+    try {
+      const balance = await this.props.seaport.getAssetBalance({
+        accountAddress, // string
+        asset, // Asset
+      })
+      
+      const ownsAsset = balance.greaterThan(0);
+
+      const domain = [
+        { name: "name", type: "string" },
+        //{ name: "version", type: "string" },
+        //{ name: "chainId", type: "uint256" },
+        { name: "verifyingContract", type: "address" },
+        //{ name: "salt", type: "bytes32" },
+    ];
+    const identity = [
+        { name: "userId", type: "uint256" },
+    ];
+
+    const domainData = {
+      name: "Artix App",
+      //version: "2",
+      //chainId: parseInt(web3.version.network, 10),
+      verifyingContract: asset.tokenAddress,
+      //salt: "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558"
+  };
+  var message = {
+      account: accountAddress,
+      contract: asset.tokenAddress,
+      tokenId: asset.tokenId,
+      info: "Sign to verify that you own the selected NFT"
+  };
+
+      const data = {
+        types: {
+          EIP712Domain: domain,
+          Identity: identity,
+        },
+        domain: domainData,
+        primaryType: "Identity",
+        message: message
+      };
+      const isSigner = signMsg(accountAddress, data)
+      isSigner.then((signerAddress) => {
+        this.setState({
+          errorMessage: (ownsAsset && (signerAddress === accountAddress)).toString()
+        })
+      })
+    } catch(error) {
+      this.onError(error)
+    } finally {
+      this.setState({ creatingOrder: false })
+    }
+  }
+
+  renderSignatureVerifyOwnershipButton() {
+    const { creatingOrder } = this.state
+    const { accountAddress, order } = this.props
+    const signatureVerifyOwner = async () => {
+      this.signatureVerifyOwner()
+    }
+    return (
+      <button
+        onClick={signatureVerifyOwner}
+        className="btn btn-primary w-100">
+        
+        Sign and Verify
+
+      </button>
+    )
+  }
+
   renderAcceptOfferButton(canAccept = true) {
     const { creatingOrder } = this.state
     const { accountAddress, order } = this.props
@@ -104,6 +220,23 @@ export default class Order extends React.Component {
         className={`btn btn-success w-100`}>
 
         Sell{creatingOrder ? "ing" : ""} for <SalePrice order={order} />
+
+      </button>
+    )
+  }
+
+  renderClearMessageButton() {  
+    const clearError = async () => {
+      this.setState({
+        errorMessage: null
+      })
+    }
+    return (
+      <button
+        onClick={clearError}
+        className={`btn btn-success w-100`}>
+
+        Clear Message
 
       </button>
     )
@@ -155,6 +288,7 @@ export default class Order extends React.Component {
           { errorMessage
             ? <div className="alert alert-warning mb-0" role="alert">
                 {errorMessage}
+                { this.renderClearMessageButton() }
               </div>
             : <li className="list-group-item">
                 {order.side === OrderSide.Buy
@@ -165,6 +299,8 @@ export default class Order extends React.Component {
                   ? this.renderBuyButton(!isOwner)
                   : null
                 }
+                { this.renderVerifyOwnershipButton() }
+                { this.renderSignatureVerifyOwnershipButton() }
               </li>
           }
         </ul>
