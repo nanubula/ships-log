@@ -2,6 +2,7 @@ import * as Web3 from 'web3'
 import BigNumber from 'bignumber.js'
 import { PortisProvider } from 'portis'
 const sigUtil = require('eth-sig-util');
+const ethUtil = require('ethereumjs-util');
 
 export const GOOGLE_ANALYTICS_ID = 'UA-111688253-4'
 export const OPENSEA_URL = "https://opensea.io"
@@ -55,11 +56,12 @@ export async function signMsg(signer, data) {
         // const s = "0x" + signature.substring(64, 128);
         // const v = parseInt(signature.substring(128, 130), 16);
         // The signature is now comprised of r, s, and v.
-
         const recovered = sigUtil.recoverTypedSignature({
           data: data,
           sig: result.result
         })
+        var message = ethUtil.bufferToHex(sigUtil.TypedDataUtils.sign(data, false))
+        console.log("Signature: " + result.result, "HashMessage: " + message)
         resolve(recovered)
         }       
     )});

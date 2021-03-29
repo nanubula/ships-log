@@ -133,7 +133,7 @@ export default class Order extends React.Component {
         accountAddress, // string
         asset, // Asset
       })
-      
+
       const ownsAsset = balance.greaterThan(0);
 
       const domain = [
@@ -142,24 +142,24 @@ export default class Order extends React.Component {
         //{ name: "chainId", type: "uint256" },
         { name: "verifyingContract", type: "address" },
         //{ name: "salt", type: "bytes32" },
-    ];
-    const identity = [
-        { name: "userId", type: "uint256" },
-    ];
+      ];
+      const identity = [
+        { name: "account", type: "uint256" },
+      ];
 
-    const domainData = {
-      name: "Artix App",
-      //version: "2",
-      //chainId: parseInt(web3.version.network, 10),
-      verifyingContract: asset.tokenAddress,
-      //salt: "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558"
-  };
-  var message = {
-      account: accountAddress,
-      contract: asset.tokenAddress,
-      tokenId: asset.tokenId,
-      info: "Sign to verify that you own the selected NFT"
-  };
+      const domainData = {
+        name: "Artix App",
+        //version: "2",
+        //chainId: parseInt(web3.version.network, 10),
+        verifyingContract: asset.tokenAddress,
+        //salt: "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558"
+      };
+      var message = {
+        account: accountAddress
+        // contract: asset.tokenAddress,
+        // tokenId: asset.tokenId,
+        // info: "Sign to verify that you own the selected NFT"
+      };
 
       const data = {
         types: {
@@ -176,7 +176,7 @@ export default class Order extends React.Component {
           errorMessage: (ownsAsset && (signerAddress === accountAddress)).toString()
         })
       })
-    } catch(error) {
+    } catch (error) {
       this.onError(error)
     } finally {
       this.setState({ creatingOrder: false })
